@@ -4,5 +4,8 @@
     <string name="app_name">GPSControl</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="gps_disabled_title">GPS is disabled</string>
+    <string name="gps_disabled_text">GPS is disabled. For correct work you should switch on GPS.</string>
+    <string name="ok">OK</string>
 
 </resources>
