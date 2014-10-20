@@ -7,5 +7,7 @@
     <string name="gps_disabled_title">GPS is disabled</string>
     <string name="gps_disabled_text">GPS is disabled. For correct work you should switch on GPS.</string>
     <string name="ok">OK</string>
+    <string name="start_nav">Start</string>
+    <string name="stop_nav">Stop</string>
 
 </resources>
