@@ -18,6 +18,11 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,7 +32,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,16 +48,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SensorEventListener {
 
-	private LocationManager locationManager;
-	private GoogleMap map;
-	private Button start_button;
-	private LatLng endPoint;
-	private boolean paintedPath;
-	private ArrayList<LatLng> points;
-	private boolean firstLocation;
-	private TextView textHello;
+	private LocationManager locationManager; // Manager for GPS
+	private GoogleMap map; // Google Map object
+	private Button start_button; // Button for start navigation
+	private LatLng endPoint; // Coordinates of the last point
+	private boolean paintedPath; // Path was painted or no
+	private ArrayList<LatLng> points; // Array with track point
+	private boolean firstLocation; // Found my location or no
+	private TextView textHello; // Some text object
+    private SensorManager mSensorManager; // device sensor manager for compass
+    private TextView showHeading; // TextView for compass
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -60,20 +70,19 @@ public class MainActivity extends Activity {
 		firstLocation = false;
 		
 		textHello = (TextView) findViewById(R.id.text_hello);
-		
-		// Getting Google Play availability status
+        showHeading = (TextView) findViewById(R.id.showHeading);
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        
         int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getBaseContext());
  
-        if(status!=ConnectionResult.SUCCESS){ // Google Play Services are not available
- 
-            int requestCode = 10;
+        if (status!=ConnectionResult.SUCCESS) {
+        	int requestCode = 10;
             Dialog dialog = GooglePlayServicesUtil.getErrorDialog(status, this, requestCode);
             dialog.show();
             return;
         }
 		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-		//locationManager.addGpsStatusListener(this);
 		
 		map = ((MapFragment) getFragmentManager()
                 .findFragmentById(R.id.map)).getMap();
@@ -128,7 +137,6 @@ public class MainActivity extends Activity {
 		
 		// Start downloading json data from Google Directions API
 		downloadTask.execute(url);
-		getGoogleBearing(location);
 	}
 	
 	private String getDirectionsUrl(LatLng origin,LatLng dest){
@@ -160,13 +168,12 @@ public class MainActivity extends Activity {
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
         try{
-                URL url = new URL(strUrl);
-
-                // Creating an http connection to communicate with url 
-                urlConnection = (HttpURLConnection) url.openConnection();
-
-                // Connecting to url 
-                urlConnection.connect();
+        	URL url = new URL(strUrl);
+        	
+        	urlConnection = (HttpURLConnection) url.openConnection();
+        	
+        	// Connecting to url
+        	urlConnection.connect();
 
                 // Reading data from url 
                 iStream = urlConnection.getInputStream();
@@ -191,8 +198,8 @@ public class MainActivity extends Activity {
                 urlConnection.disconnect();
         }
         return data;
-     }
-	
+    }
+    
     /** A class to download data from Google Directions URL */
 	private class DownloadTask extends AsyncTask<String, Void, String>{			
 				
@@ -227,7 +234,7 @@ public class MainActivity extends Activity {
 	}
 	
 	/** A class to parse the Google Directions in JSON format */
-    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>> >{
+    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>>> {
     	
     	// Parsing the data in non-ui thread    	
 		@Override
@@ -285,9 +292,13 @@ public class MainActivity extends Activity {
 		}			
     }
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onResume() {
 		super.onResume();
+		// for the system's orientation sensor registered listeners
+        mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+                SensorManager.SENSOR_DELAY_GAME);
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 10, 10, locationListener);
 	    checkEnabled();
 	}
@@ -296,7 +307,54 @@ public class MainActivity extends Activity {
 	protected void onPause() {
 		super.onPause();
 		locationManager.removeUpdates(locationListener);
+		// to stop the listener and save battery
+        mSensorManager.unregisterListener(this);
 	}
+	
+	public void onSensorChanged(SensorEvent event) {
+        // get the angle around the z-axis rotated
+        float degree = Math.round(event.values[0]);
+        Float mapDegree = getGoogleBearing(null);
+        if (mapDegree != null)
+        {
+        	String text = String.valueOf(mapDegree) + " ";
+        	int accuracy = 10;
+        	float leftBorder = degree + accuracy;
+        	float rightBorder = degree - accuracy;
+        	leftBorder = (leftBorder >= 360) ? (leftBorder - 360) : leftBorder;
+        	rightBorder = (rightBorder < 0) ? (rightBorder + 360) : rightBorder;
+        	if (rightBorder > leftBorder)
+        	{
+        		if (mapDegree < leftBorder || mapDegree > rightBorder)
+        			text += "straight";
+        		else
+        		{
+        			float proximityLeft = mapDegree - leftBorder;
+        			float proximityRight = rightBorder - mapDegree;
+        			if (proximityLeft > proximityRight)
+        				text += "left";
+        			else
+        				text += "right";
+        		}
+        	}
+        	else
+        	{
+        		if (mapDegree < rightBorder)
+        			text += "left";
+        		else if (mapDegree > leftBorder)
+        			text += "right";
+        		else
+        			text += "straight";
+        	}
+        	textHello.setText(text);
+        }
+ 
+        showHeading.setText("Heading: " + Float.toString(degree) + " degrees");
+    }
+ 
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // not in use
+    }
 	
 	private LocationListener locationListener = new LocationListener() {
 		
@@ -320,10 +378,10 @@ public class MainActivity extends Activity {
 		public void onStatusChanged(String provider, int status, Bundle extras) {
 			switch (status) {
 				case LocationProvider.OUT_OF_SERVICE:
-					start_button.setEnabled(false);
+					//start_button.setEnabled(false);
 					break;
 				case LocationProvider.TEMPORARILY_UNAVAILABLE:
-					start_button.setEnabled(false);
+					//start_button.setEnabled(false);
 					break;
 				case LocationProvider.AVAILABLE:
 					start_button.setEnabled(true);
@@ -332,14 +390,22 @@ public class MainActivity extends Activity {
 		}
 	};
 	
-	private float getGoogleBearing(Location location) {
-		if (location == null || points == null)
-			return -1;
+	private Float getGoogleBearing(Location location) {
+		if (points == null)
+			return null;
+		if (location == null)
+		{
+			location = new Location("");
+			location.setLatitude(points.get(0).latitude);
+			location.setLongitude(points.get(0).longitude);
+		}
 		Location nextLoc = new Location("");
 		nextLoc.setLatitude(points.get(1).latitude);
 		nextLoc.setLongitude(points.get(1).longitude);
-		textHello.setText(String.valueOf(location.bearingTo(nextLoc)));
-		return location.bearingTo(nextLoc);
+		float bearing = location.bearingTo(nextLoc);
+		if (bearing < 0) 
+			bearing += 360;
+		return bearing;
 	}
 	
 	private void showLocation(Location location) {

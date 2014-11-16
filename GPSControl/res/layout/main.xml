@@ -25,7 +25,14 @@
             android:layout_width="wrap_content"
             android:layout_height="29dp"
             android:text="@string/start_nav" />
-
+        
+        <TextView
+	        android:id="@+id/showHeading"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginBottom="40dp"
+	        android:layout_marginTop="20dp"
+	        android:text="Heading: 0.0" />
     </LinearLayout>
     
     <fragment
