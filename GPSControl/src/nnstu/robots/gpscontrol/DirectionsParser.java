@@ -26,7 +26,7 @@ public class DirectionsParser {
             /** Traversing all routes */
             for(int i=0;i<jRoutes.length();i++){
                 jLegs = ( (JSONObject)jRoutes.get(i)).getJSONArray("legs");
-                List path = new ArrayList<HashMap<String, String>>();
+                List<HashMap<String, String>> path = new ArrayList<HashMap<String, String>>();
  
                 /** Traversing all legs */
                 for(int j=0;j<jLegs.length();j++){

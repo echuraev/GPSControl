@@ -21,21 +21,16 @@ import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
-import android.hardware.SensorListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,7 +64,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		paintedPath = false;
 		firstLocation = false;
 		
-		textHello = (TextView) findViewById(R.id.text_hello);
+		textHello = (TextView) findViewById(R.id.cmd);
         showHeading = (TextView) findViewById(R.id.showHeading);
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         
@@ -264,6 +259,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 			// Traversing through all the routes
 			for(int i=0;i<result.size();i++){
 				points = new ArrayList<LatLng>();
+				LatLng position = new LatLng(map.getMyLocation().getLatitude(), 
+						map.getMyLocation().getLongitude());
 				lineOptions = new PolylineOptions();
 				
 				// Fetching i-th route
@@ -275,9 +272,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 					
 					double lat = Double.parseDouble(point.get("lat"));
 					double lng = Double.parseDouble(point.get("lng"));
-					LatLng position = new LatLng(lat, lng);	
+					position = new LatLng(lat, lng);	
 					
-					points.add(position);						
+					points.add(position);
 				}
 				
 				// Adding all the points in the route to LineOptions
@@ -349,11 +346,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         	textHello.setText(text);
         }
  
-        showHeading.setText("Heading: " + Float.toString(degree) + " degrees");
+        showHeading.setText("Heading: " + Float.toString(degree));
     }
  
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // not in use
     }
 	
 	private LocationListener locationListener = new LocationListener() {
@@ -376,7 +372,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		
 		@Override
 		public void onStatusChanged(String provider, int status, Bundle extras) {
-			switch (status) {
+			/*switch (status) {
 				case LocationProvider.OUT_OF_SERVICE:
 					//start_button.setEnabled(false);
 					break;
@@ -386,7 +382,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 				case LocationProvider.AVAILABLE:
 					start_button.setEnabled(true);
 					break;
-			}
+			}*/
 		}
 	};
 	
@@ -443,24 +439,4 @@ public class MainActivity extends Activity implements SensorEventListener {
 		}
 	}
 	
-	/*
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
-	*/
 }

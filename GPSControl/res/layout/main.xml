@@ -15,24 +15,22 @@
         android:layout_height="wrap_content" >
 
         <TextView
-            android:id="@+id/text_hello"
+            android:id="@+id/cmd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/hello_world" />
+            android:text="@string/cmd" />
 
         <Button
             android:id="@+id/start_button"
             android:layout_width="wrap_content"
-            android:layout_height="29dp"
+            android:layout_height="wrap_content"
             android:text="@string/start_nav" />
         
         <TextView
 	        android:id="@+id/showHeading"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:layout_marginBottom="40dp"
-	        android:layout_marginTop="20dp"
-	        android:text="Heading: 0.0" />
+	        android:text="@string/heading" />
     </LinearLayout>
     
     <fragment
