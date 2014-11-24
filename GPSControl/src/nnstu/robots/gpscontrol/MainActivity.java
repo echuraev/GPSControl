@@ -52,7 +52,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private boolean paintedPath; // Path was painted or no
 	private ArrayList<LatLng> points; // Array with track point
 	private boolean firstLocation; // Found my location or no
-	private TextView textHello; // Some text object
+	private TextView textCMD; // Some text object
     private SensorManager mSensorManager; // device sensor manager for compass
     private TextView showHeading; // TextView for compass
 	
@@ -64,7 +64,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		paintedPath = false;
 		firstLocation = false;
 		
-		textHello = (TextView) findViewById(R.id.cmd);
+		textCMD = (TextView) findViewById(R.id.cmd);
         showHeading = (TextView) findViewById(R.id.showHeading);
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         
@@ -94,7 +94,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 		});		
 		
 		start_button = (Button) findViewById(R.id.start_button);
-		//start_button.setEnabled(false);
 		start_button.setText(R.string.start_nav);
 		start_button.setOnClickListener(new OnClickListener() {
 			@Override
@@ -114,6 +113,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 				}
 				paintedPath = true;
 				start_button.setText(R.string.stop_nav);
+				textCMD.setText(R.string.cmd);
 				
 				drawRoute(map.getMyLocation());
 			}
@@ -135,25 +135,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 	}
 	
 	private String getDirectionsUrl(LatLng origin,LatLng dest){
-		
-		// Origin of route
 		String str_origin = "origin="+origin.latitude+","+origin.longitude;
-		
-		// Destination of route
 		String str_dest = "destination="+dest.latitude+","+dest.longitude;			
-					
-		// Sensor enabled
-		String sensor = "sensor=false";			
-					
-		// Building the parameters to the web service
+		String sensor = "sensor=false";
 		String parameters = str_origin+"&"+str_dest+"&"+sensor;
-					
-		// Output format
 		String output = "json";
-		
-		// Building the url to the web service
 		String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters;		
-		
 		return url;
 	}
 	
@@ -162,53 +149,48 @@ public class MainActivity extends Activity implements SensorEventListener {
         String data = "";
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
-        try{
+        try {
         	URL url = new URL(strUrl);
         	
         	urlConnection = (HttpURLConnection) url.openConnection();
         	
         	// Connecting to url
         	urlConnection.connect();
-
-                // Reading data from url 
-                iStream = urlConnection.getInputStream();
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
-                StringBuffer sb  = new StringBuffer();
-
-                String line = "";
-                while( ( line = br.readLine())  != null){
-                        sb.append(line);
-                }
-                
-                data = sb.toString();
-
-                br.close();
-
-        }catch(Exception e){
-                Log.d("Exception while downloading url", e.toString());
-        }finally{
-                iStream.close();
-                urlConnection.disconnect();
+        	
+        	// Reading data from url
+        	iStream = urlConnection.getInputStream();
+        	BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
+        	
+        	StringBuffer sb  = new StringBuffer();
+        	
+        	String line = "";
+        	
+        	while ((line = br.readLine()) != null) {
+        		sb.append(line);
+        	}
+        	
+        	data = sb.toString();
+        	
+        	br.close();
+        } catch(Exception e) {
+        	Log.d("Exception while downloading url", e.toString());
+        } finally {
+        	iStream.close();
+        	urlConnection.disconnect();
         }
         return data;
     }
     
     /** A class to download data from Google Directions URL */
-	private class DownloadTask extends AsyncTask<String, Void, String>{			
+	private class DownloadTask extends AsyncTask<String, Void, String> {			
 				
 		// Downloading data in non-ui thread
 		@Override
 		protected String doInBackground(String... url) {
-				
-			// For storing data from web service
 			String data = "";
-					
-			try{
-				// Fetching the data from web service
+			try {
 				data = downloadUrl(url[0]);
-			}catch(Exception e){
+			} catch(Exception e) {
 				Log.d("Background Task",e.toString());
 			}
 			return data;		
@@ -218,8 +200,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		// doInBackground()
 		@Override
 		protected void onPostExecute(String result) {			
-			super.onPostExecute(result);			
-			
+			super.onPostExecute(result);
 			ParserTask parserTask = new ParserTask();
 			
 			// Invokes the thread for parsing the JSON data
@@ -228,46 +209,40 @@ public class MainActivity extends Activity implements SensorEventListener {
 		}		
 	}
 	
-	/** A class to parse the Google Directions in JSON format */
     private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>>> {
-    	
     	// Parsing the data in non-ui thread    	
 		@Override
 		protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-			
 			JSONObject jObject;	
 			List<List<HashMap<String, String>>> routes = null;			           
             
-            try{
+            try {
             	jObject = new JSONObject(jsonData[0]);
             	DirectionsParser parser = new DirectionsParser();
             	
             	// Starts parsing data
             	routes = parser.parse(jObject);    
-            }catch(Exception e){
+            } catch(Exception e) {
             	e.printStackTrace();
             }
             return routes;
 		}
 		
-		// Executes in UI thread, after the parsing process
 		@Override
 		protected void onPostExecute(List<List<HashMap<String, String>>> result) {
 			points = null;
 			PolylineOptions lineOptions = null;
 			
-			// Traversing through all the routes
-			for(int i=0;i<result.size();i++){
+			for(int i = 0;i < result.size(); ++i) {
 				points = new ArrayList<LatLng>();
 				LatLng position = new LatLng(map.getMyLocation().getLatitude(), 
 						map.getMyLocation().getLongitude());
 				lineOptions = new PolylineOptions();
 				
-				// Fetching i-th route
 				List<HashMap<String, String>> path = result.get(i);
 				
 				// Fetching all the points in i-th route
-				for(int j=0; j < path.size(); j++){
+				for(int j = 0; j < path.size(); ++j) {
 					HashMap<String,String> point = path.get(j);					
 					
 					double lat = Double.parseDouble(point.get("lat"));
@@ -280,8 +255,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 				// Adding all the points in the route to LineOptions
 				lineOptions.addAll(points);
 				lineOptions.width(5);
-				lineOptions.color(Color.BLUE);	
-				
+				lineOptions.color(Color.BLUE);
 			}
 			
 			// Drawing polyline in the Google Map for the i-th route
@@ -293,7 +267,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		// for the system's orientation sensor registered listeners
         mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
                 SensorManager.SENSOR_DELAY_GAME);
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 10, 10, locationListener);
@@ -304,12 +277,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void onPause() {
 		super.onPause();
 		locationManager.removeUpdates(locationListener);
-		// to stop the listener and save battery
         mSensorManager.unregisterListener(this);
 	}
 	
 	public void onSensorChanged(SensorEvent event) {
-        // get the angle around the z-axis rotated
         float degree = Math.round(event.values[0]);
         Float mapDegree = getGoogleBearing(null);
         if (mapDegree != null)
@@ -343,17 +314,17 @@ public class MainActivity extends Activity implements SensorEventListener {
         		else
         			text += "straight";
         	}
-        	textHello.setText(text);
+        	textCMD.setText(text);
         }
- 
         showHeading.setText("Heading: " + Float.toString(degree));
     }
  
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    	// Not implemented
     }
 	
+    // Change location
 	private LocationListener locationListener = new LocationListener() {
-		
 		@Override
 		public void onLocationChanged(Location location) {
 			showLocation(location);
@@ -372,20 +343,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 		
 		@Override
 		public void onStatusChanged(String provider, int status, Bundle extras) {
-			/*switch (status) {
-				case LocationProvider.OUT_OF_SERVICE:
-					//start_button.setEnabled(false);
-					break;
-				case LocationProvider.TEMPORARILY_UNAVAILABLE:
-					//start_button.setEnabled(false);
-					break;
-				case LocationProvider.AVAILABLE:
-					start_button.setEnabled(true);
-					break;
-			}*/
+			// Not implemented
 		}
 	};
 	
+	// Get bearing from the map
 	private Float getGoogleBearing(Location location) {
 		if (points == null)
 			return null;
@@ -404,6 +366,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		return bearing;
 	}
 	
+	// Update location in the map
 	private void showLocation(Location location) {
 		if (location == null)
 			return;
@@ -421,6 +384,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
 	}
 	
+	// Checking that GPS is working
 	private void checkEnabled() {
 		if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
